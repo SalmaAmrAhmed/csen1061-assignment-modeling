@@ -1,0 +1,628 @@
+---
+title: "Assignment"
+author: "Salma Amr"
+date: "April 15, 2016"
+output: html_document
+---
+```{r}
+library(dplyr)
+library(tidyr)
+```
+
+Include required libraries 
+```{r}
+library(C50)
+library(printr)
+library(rpart)
+library(caret)
+library(randomForest)
+library(e1071)
+library(nnet)
+library(adabag)
+```
+
+# Load and inspect my Sonar data:
+```{r}
+data <- read.csv("~/Desktop/DataScience/Assignement/sonar.all-data.csv", stringsAsFactors = FALSE)
+data %>% dim()
+data %>% summary()
+data %>% head()
+```
+
+# Decision Trees:
+```{r}
+data$R <- as.factor(data$R)
+class(data$R)
+model <- C5.0(R ~ ., data = data)
+```
+
+Test C5.0 Model on same data set:
+```{r}
+results <- predict(object = model, newdata = data, type = "class")
+model %>% summary()
+CM <- table(results, data$R)
+precision <- CM[1,1]/sum(CM[1:2,1])
+recall <- CM[1,1]/sum(CM[1,1:2])
+FScore <- 2*precision*recall/(precision + recall)
+accuracy <- sum(CM[1,1], CM[2,2])/sum(CM[,])
+error <- 1 - accuracy
+confusionMatrix(CM)
+```
+
+# Using K-fold cross validations:
+```{r}
+k = 10 
+data$id <- sample(1:k, nrow(data), replace = TRUE)
+list <- c(1:k)
+KFprediction <- data.frame()
+KFtestsetCopy <- data.frame()
+
+for (i in 1:k) {
+  KFtrainingset <- subset(data, id %in% list[-i])
+  KFtestset <- subset(data, id %in% c(i))
+  KFmodel <- C5.0(R ~ ., data = KFtrainingset)
+  KFtemp <- as.data.frame(predict(KFmodel, newdata = KFtestset, type = "class"))
+  KFprediction <- rbind(KFprediction, KFtemp)
+  KFtestsetCopy <- rbind(KFtestsetCopy,KFtestset)
+}
+```
+
+Test K-Fold Model:
+```{r}
+kFoldModel <- as.factor(KFprediction$`predict(KFmodel, newdata = KFtestset, type = "class")`)
+KFCM <- table(kFoldModel, KFtestsetCopy$R)
+KFprecision <- KFCM[1,1]/sum(KFCM[1:2,1])
+KFrecall <- KFCM[1,1]/sum(KFCM[1,1:2])
+KFFScore <- 2*KFprecision*KFrecall/(KFprecision + KFrecall)
+KFaccuracy <- sum(KFCM[1,1], KFCM[2,2])/sum(KFCM[,])
+KFerror <- 1 - KFaccuracy
+confusionMatrix(KFCM)
+```
+
+# Random Forest:
+```{r}
+k = 10
+
+data$id <- sample(1:k, nrow(data), replace = TRUE)
+list <- c(1:k)
+
+RFprediction <- data.frame()
+RFtestsetCopy <- data.frame()
+
+for (i in 1:k) {
+  RFtrainingset <- subset(data, id %in% list[-i])
+  RFtestset <- subset(data, id %in% c(i))
+  RFmodel <- randomForest(RFtrainingset$R ~ ., data = RFtrainingset)
+  RFtemp <- as.data.frame(predict(RFmodel, newdata = RFtestset, type = "class"))
+  RFprediction <- rbind(RFprediction, RFtemp)
+  RFtestsetCopy <- rbind(RFtestsetCopy,RFtestset)
+  }
+```
+
+Test Random Forest Model:
+
+```{r}
+kFoldModel <- as.factor(RFprediction$`predict(RFmodel, newdata = RFtestset, type = "class")`)
+RFCM <- table(kFoldModel, RFtestsetCopy$R)
+RFprecision <- RFCM[1,1]/sum(RFCM[1:2,1])
+RFrecall <- RFCM[1,1]/sum(RFCM[1,1:2])
+RFFScore <- 2*RFprecision*RFrecall/(RFprecision + RFrecall)
+RFaccuracy <- sum(RFCM[1,1], RFCM[2,2])/sum(RFCM[,])
+RFerror <- 1 - RFaccuracy
+confusionMatrix(RFCM)
+```
+
+
+#SVM:
+
+```{r}
+k = 10
+
+data$id <- sample(1:k, nrow(data), replace = TRUE)
+list <- c(1:k)
+
+SVMprediction <- data.frame()
+SVMtestsetCopy <- data.frame()
+
+for (i in 1:k) {
+  SVMtrainingset <- subset(data, id %in% list[-i])
+  SVMtestset <- subset(data, id %in% c(i))
+  SVMmodel <- svm(SVMtrainingset$R ~ ., data = SVMtrainingset)
+  SVMtemp <- as.data.frame(predict(SVMmodel, newdata = SVMtestset, type = "class"))
+  SVMprediction <- rbind(SVMprediction, SVMtemp)
+  SVMtestsetCopy <- rbind(SVMtestsetCopy,SVMtestset)
+  }
+```
+
+Test SVM Model:
+
+```{r}
+kFoldModel <- as.factor(SVMprediction$`predict(SVMmodel, newdata = SVMtestset, type = "class")`)
+SVMCM <- table(kFoldModel, SVMtestsetCopy$R)
+SVMprecision <- SVMCM[1,1]/sum(SVMCM[1:2,1])
+SVMrecall <- SVMCM[1,1]/sum(SVMCM[1,1:2])
+SVMFScore <- 2*SVMprecision*SVMrecall/(SVMprecision + SVMrecall)
+SVMaccuracy <- sum(SVMCM[1,1], SVMCM[2,2])/sum(SVMCM[,])
+SVMerror <- 1 - SVMaccuracy
+confusionMatrix(SVMCM)
+
+```
+
+# Naive Bayes:
+```{r}
+k = 10
+
+data$id <- sample(1:k, nrow(data), replace = TRUE)
+list <- c(1:k)
+
+NBprediction <- data.frame()
+NBtestsetCopy <- data.frame()
+
+for (i in 1:k) {
+  NBtrainingset <- subset(data, id %in% list[-i])
+  NBtestset <- subset(data, id %in% c(i))
+  NBmodel <- naiveBayes(NBtrainingset$R ~ ., data = NBtrainingset)
+  NBtemp <- as.data.frame(predict(NBmodel, newdata = NBtestset, type = "class"))
+  NBprediction <- rbind(NBprediction, NBtemp)
+  NBtestsetCopy <- rbind(NBtestsetCopy,NBtestset)
+  }
+
+```
+
+Test Naive Bayes Model:
+
+```{r}
+kFoldModel <- as.factor(NBprediction$`predict(NBmodel, newdata = NBtestset, type = "class")`)
+NBCM <- table(kFoldModel, NBtestsetCopy$R)
+NBprecision <- NBCM[1,1]/sum(NBCM[1:2,1])
+NBrecall <- NBCM[1,1]/sum(NBCM[1,1:2])
+NBFScore <- 2*NBprecision*NBrecall/(NBprecision + NBrecall)
+NBaccuracy <- sum(NBCM[1,1], NBCM[2,2])/sum(NBCM[,])
+NBerror <- 1 - NBaccuracy
+confusionMatrix(NBCM)
+```
+
+# Neural Networks:
+
+```{r}
+k = 10
+
+data$id <- sample(1:k, nrow(data), replace = TRUE)
+list <- c(1:k)
+
+NNprediction <- data.frame()
+NNtestsetCopy <- data.frame()
+
+for (i in 1:k) {
+  NNtrainingset <- subset(data, id %in% list[-i])
+  NNtestset <- subset(data, id %in% c(i))
+  NNmodel <- nnet(NNtrainingset$R ~ ., data = NNtrainingset, size = 10)
+  NNtemp <- as.data.frame(predict(NNmodel, newdata = NNtestset, type = "class"))
+  NNprediction <- rbind(NNprediction, NNtemp)
+  NNtestsetCopy <- rbind(NNtestsetCopy,NNtestset)
+  }
+```
+
+Test Neural Networks Model:
+
+```{r}
+kFoldModel <- as.factor(NNprediction$`predict(NNmodel, newdata = NNtestset, type = "class")`)
+NNCM <- table(kFoldModel, NNtestsetCopy$R)
+NNprecision <- NNCM[1,1]/sum(NNCM[1:2,1])
+NNrecall <- NNCM[1,1]/sum(NNCM[1,1:2])
+NNFScore <- 2*NNprecision*NNrecall/(NNprecision + NNrecall)
+NNaccuracy <- sum(NNCM[1,1], NNCM[2,2])/sum(NNCM[,])
+NNerror <- 1 - NNaccuracy
+confusionMatrix(NNCM)
+```
+ 
+#Load and inspect the Hepatitis data:
+
+```{r}
+h.data <- read.csv("~/Desktop/DataScience/Assignement/hepatitis.data.csv", stringsAsFactors = FALSE)
+h.data %>% dim()
+h.data %>% summary()
+h.data %>% head()
+```
+
+Clean the data, remove all missing values and fix column types:
+```{r}
+h.data$X. <- as.integer(h.data$X.)
+h.data$X1.00 <- as.integer(h.data$X1.00)
+h.data$X85 <- as.integer(h.data$X85)
+h.data$X18 <- as.integer(h.data$X18)
+h.data$X4.0 <- as.integer(h.data$X4.0)
+h.data$X2 <- as.factor(h.data$X2)
+h.data$X2.1 <- as.factor(h.data$X2.1)
+h.data$X1 <- as.factor(h.data$X1)
+h.data$X2.2 <- as.factor(h.data$X2.2)
+h.data$X2.3 <- as.factor(h.data$X2.3)
+h.data$X2.4 <- as.factor(h.data$X2.4)
+h.data$X2.5 <- as.factor(h.data$X2.5)
+h.data$X1.1 <- as.factor(h.data$X1.1)
+h.data$X2.6 <- as.factor(h.data$X2.6)
+h.data$X2.7 <- as.factor(h.data$X2.7)
+h.data$X2.8 <- as.factor(h.data$X2.8)
+h.data$X2.9 <- as.factor(h.data$X2.9)
+h.data$X2.10 <- as.factor(h.data$X2.10)
+h.data$X1.2 <- as.factor(h.data$X1.2)
+d <- h.data %>% filter(X1 != "?" , X2.3 != "?" , X2.4 != "?" , X2.5 != "?" , X1.1 != "?" , X2.6 != "?" , X2.7 != "?" , X2.8 != "?" , X2.9 != "?" , X2.10 != "?")
+d <- d[complete.cases(d),]
+d %>% dim()
+
+```
+
+# Random Forest:
+
+```{r}
+k = 10
+
+d$id <- sample(1:k, nrow(d), replace = TRUE)
+list <- c(1:k)
+
+RF2prediction <- data.frame()
+RF2testsetCopy <- data.frame()
+
+for (i in 1:k) {
+  RF2trainingset <- subset(d, id %in% list[-i])
+  RF2testset <- subset(d, id %in% c(i))
+  RF2model <- randomForest(RF2trainingset$X2 ~ ., data = RF2trainingset)
+  RF2temp <- as.data.frame(predict(RF2model, newdata = RF2testset, type = "class"))
+  RF2prediction <- rbind(RF2prediction, RF2temp)
+  RF2testsetCopy <- rbind(RF2testsetCopy,RF2testset)
+  }
+```
+
+# Test Random Forest Model:
+
+```{r}
+kFoldModel <- as.factor(RF2prediction$`predict(RF2model, newdata = RF2testset, type = "class")`)
+RF2CM <- table(kFoldModel, RF2testsetCopy$X2)
+RF2precision <- RF2CM[1,1]/sum(RF2CM[1:2,1])
+RF2recall <- RF2CM[1,1]/sum(RF2CM[1,1:2])
+RF2FScore <- 2*RF2precision*RF2recall/(RF2precision + RF2recall)
+RF2accuracy <- sum(RF2CM[1,1], RF2CM[2,2])/sum(RF2CM[,])
+RF2error <- 1 - RF2accuracy
+confusionMatrix(RF2CM)
+```
+
+#SVM:
+
+```{r}
+k = 10
+
+d$id <- sample(1:k, nrow(d), replace = TRUE)
+list <- c(1:k)
+
+SVM2prediction <- data.frame()
+SVM2testsetCopy <- data.frame()
+
+for (i in 1:k) {
+  SVM2trainingset <- subset(d, id %in% list[-i])
+  SVM2testset <- subset(d, id %in% c(i))
+  SVM2model <- svm(SVM2trainingset$X2 ~ ., data = SVM2trainingset)
+  SVM2temp <- as.data.frame(predict(SVM2model, newdata = SVM2testset, type = "class"))
+  SVM2prediction <- rbind(SVM2prediction, SVM2temp)
+  SVM2testsetCopy <- rbind(SVM2testsetCopy,SVM2testset)
+  }
+```
+
+Test SVM Model:
+
+```{r}
+kFoldModel <- as.factor(SVM2prediction$`predict(SVM2model, newdata = SVM2testset, type = "class")`)
+SVM2CM <- table(kFoldModel, SVM2testsetCopy$X2)
+SVM2precision <- SVM2CM[1,1]/sum(SVM2CM[1:2,1])
+SVM2recall <- SVM2CM[1,1]/sum(SVM2CM[1,1:2])
+SVM2FScore <- 2*SVM2precision*SVM2recall/(SVM2precision + SVM2recall)
+SVM2accuracy <- sum(SVM2CM[1,1], SVM2CM[2,2])/sum(SVM2CM[,])
+SVM2error <- 1 - SVM2accuracy
+confusionMatrix(SVM2CM)
+```
+
+#Naive Bayes Model:
+
+```{r}
+k = 10
+
+d$id <- sample(1:k, nrow(d), replace = TRUE)
+list <- c(1:k)
+
+NB2prediction <- data.frame()
+NB2testsetCopy <- data.frame()
+
+for (i in 1:k) {
+  NB2trainingset <- subset(d, id %in% list[-i])
+  NB2testset <- subset(d, id %in% c(i))
+  NB2model <- naiveBayes(NB2trainingset$X2 ~ ., data = NB2trainingset)
+  NB2temp <- as.data.frame(predict(NB2model, newdata = NB2testset, type = "class"))
+  NB2prediction <- rbind(NB2prediction, NB2temp)
+  NB2testsetCopy <- rbind(NB2testsetCopy,NB2testset)
+  }
+
+```
+
+Test Naive Bayes Model:
+
+```{r}
+kFoldModel <- as.factor(NB2prediction$`predict(NB2model, newdata = NB2testset, type = "class")`)
+NB2CM <- table(kFoldModel, NB2testsetCopy$X2)
+NB2precision <- NB2CM[1,1]/sum(NB2CM[1:2,1])
+NB2recall <- NB2CM[1,1]/sum(NB2CM[1,1:2])
+NB2FScore <- 2*NB2precision*NB2recall/(NB2precision + NB2recall)
+NB2accuracy <- sum(NB2CM[1,1], NB2CM[2,2])/sum(NB2CM[,])
+NB2error <- 1 - NB2accuracy
+confusionMatrix(NB2CM)
+```
+
+# Neural Networks Model:
+
+```{r}
+
+k = 10
+
+d$id <- sample(1:k, nrow(d), replace = TRUE)
+list <- c(1:k)
+
+NN2prediction <- data.frame()
+NN2testsetCopy <- data.frame()
+
+for (i in 1:k) {
+  NN2trainingset <- subset(d, id %in% list[-i])
+  NN2testset <- subset(d, id %in% c(i))
+  NN2model <- nnet(NN2trainingset$X2 ~ ., data = NN2trainingset, size = 10)
+  NN2temp <- as.data.frame(predict(NN2model, newdata = NN2testset, type = "class"))
+  NN2prediction <- rbind(NN2prediction, NN2temp)
+  NN2testsetCopy <- rbind(NN2testsetCopy,NN2testset)
+  }
+```
+
+Test Neural Network Model:
+ 
+```{r}
+kFoldModel <- as.factor(NN2prediction$`predict(NN2model, newdata = NN2testset, type = "class")`)
+NN2CM <- table(kFoldModel, NN2testsetCopy$X2)
+NN2precision <- NN2CM[1,1]/sum(NN2CM[1:2,1])
+NN2recall <- NN2CM[1,1]/sum(NN2CM[1,1:2])
+NN2FScore <- 2*NN2precision*NN2recall/(NN2precision + NN2recall)
+NN2accuracy <- sum(NN2CM[1,1], NN2CM[2,2])/sum(NN2CM[,])
+NN2error <- 1 - NN2accuracy
+confusionMatrix(NN2CM)
+```
+
+#Load and inspect the pima-indians data:
+
+```{r}
+i.data <- read.csv("~/Desktop/DataScience/Assignement/pima-indians-diabetes.data.csv", stringsAsFactors = FALSE)
+i.data %>% dim()
+i.data %>% summary()
+i.data %>% head()
+i.data$X1 <- as.factor(i.data$X1)
+```
+
+# Random Forests:
+
+```{r}
+k = 10
+
+i.data$id <- sample(1:k, nrow(i.data), replace = TRUE)
+list <- c(1:k)
+
+RF3prediction <- data.frame()
+RF3testsetCopy <- data.frame()
+
+for (i in 1:k) {
+  RF3trainingset <- subset(i.data, id %in% list[-i])
+  RF3testset <- subset(i.data, id %in% c(i))
+  RF3model <- randomForest(RF3trainingset$X1 ~ ., data = RF3trainingset)
+  RF3temp <- as.data.frame(predict(RF3model, newdata = RF3testset, type = "class"))
+  RF3prediction <- rbind(RF3prediction, RF3temp)
+  RF3testsetCopy <- rbind(RF3testsetCopy,RF3testset)
+  }
+```
+
+Test Random Forest:
+
+```{r}
+
+kFoldModel <- as.factor(RF3prediction$`predict(RF3model, newdata = RF3testset, type = "class")`)
+RF3CM <- table(kFoldModel, RF3testsetCopy$X1)
+RF3precision <- RF3CM[1,1]/sum(RF3CM[1:2,1])
+RF3recall <- RF3CM[1,1]/sum(RF3CM[1,1:2])
+RF3FScore <- 2*RF3precision*RF3recall/(RF3precision + RF3recall)
+RF3accuracy <- sum(RF3CM[1,1], RF3CM[2,2])/sum(RF3CM[,])
+RF3error <- 1 - RF3accuracy
+confusionMatrix(RF3CM)
+```
+
+# SVM:
+
+```{r}
+k = 10
+
+i.data$id <- sample(1:k, nrow(i.data), replace = TRUE)
+list <- c(1:k)
+
+SVM3prediction <- data.frame()
+SVM3testsetCopy <- data.frame()
+
+for (i in 1:k) {
+  SVM3trainingset <- subset(i.data, id %in% list[-i])
+  SVM3testset <- subset(i.data, id %in% c(i))
+  SVM3model <- svm(SVM3trainingset$X1 ~ ., data = SVM3trainingset)
+  SVM3temp <- as.data.frame(predict(SVM3model, newdata = SVM3testset, type = "class"))
+  SVM3prediction <- rbind(SVM3prediction, SVM3temp)
+  SVM3testsetCopy <- rbind(SVM3testsetCopy,SVM3testset)
+  }
+```
+
+Test SVM Model:
+
+```{r}
+kFoldModel <- as.factor(SVM3prediction$`predict(SVM3model, newdata = SVM3testset, type = "class")`)
+SVM3CM <- table(kFoldModel, SVM3testsetCopy$X1)
+SVM3precision <- SVM3CM[1,1]/sum(SVM3CM[1:2,1])
+SVM3recall <- SVM3CM[1,1]/sum(SVM3CM[1,1:2])
+SVM3FScore <- 2*SVM3precision*SVM3recall/(SVM3precision + SVM3recall)
+SVM3accuracy <- sum(SVM3CM[1,1], SVM3CM[2,2])/sum(SVM3CM[,])
+SVM3error <- 1 - SVM3accuracy
+confusionMatrix(SVM3CM)
+```
+
+# Naive Bayes Model:
+
+```{r}
+k = 10
+
+i.data$id <- sample(1:k, nrow(i.data), replace = TRUE)
+list <- c(1:k)
+
+NB3prediction <- data.frame()
+NB3testsetCopy <- data.frame()
+
+for (i in 1:k) {
+  NB3trainingset <- subset(i.data, id %in% list[-i])
+  NB3testset <- subset(i.data, id %in% c(i))
+  NB3model <- naiveBayes(NB3trainingset$X1 ~ ., data = NB3trainingset)
+  NB3temp <- as.data.frame(predict(NB3model, newdata = NB3testset, type = "class"))
+  NB3prediction <- rbind(NB3prediction, NB3temp)
+  NB3testsetCopy <- rbind(NB3testsetCopy,NB3testset)
+  }
+
+```
+
+Test Naive Bayes Model:
+```{r}
+kFoldModel <- as.factor(NB3prediction$`predict(NB3model, newdata = NB3testset, type = "class")`)
+NB3CM <- table(kFoldModel, NB3testsetCopy$X1)
+NB3precision <- NB3CM[1,1]/sum(NB3CM[1:2,1])
+NB3recall <- NB3CM[1,1]/sum(NB3CM[1,1:2])
+NB3FScore <- 2*NB3precision*NB3recall/(NB3precision + NB3recall)
+NB3accuracy <- sum(NB3CM[1,1], NB3CM[2,2])/sum(NB3CM[,])
+NB3error <- 1 - NB3accuracy
+confusionMatrix(NB3CM)
+```
+
+# Neural Networks Model:
+
+```{r}
+k = 10
+
+i.data$id <- sample(1:k, nrow(i.data), replace = TRUE)
+list <- c(1:k)
+
+NN3prediction <- data.frame()
+NN3testsetCopy <- data.frame()
+
+for (i in 1:k) {
+  NN3trainingset <- subset(i.data, id %in% list[-i])
+  NN3testset <- subset(i.data, id %in% c(i))
+  NN3model <- nnet(NN3trainingset$X1 ~ ., data = NN3trainingset, size = 10)
+  NN3temp <- as.data.frame(predict(NN3model, newdata = NN3testset, type = "class"))
+  NN3prediction <- rbind(NN3prediction, NN3temp)
+  NN3testsetCopy <- rbind(NN3testsetCopy,NN3testset)
+  }
+```
+
+Test Neural Networks Model:
+
+```{r}
+kFoldModel <- as.factor(NN3prediction$`predict(NN3model, newdata = NN3testset, type = "class")`)
+NN3CM <- table(kFoldModel, NN3testsetCopy$X1)
+NN3precision <- NN3CM[1,1]/sum(NN3CM[1:2,1])
+NN3recall <- NN3CM[1,1]/sum(NN3CM[1,1:2])
+NN3FScore <- 2*NN3precision*NN3recall/(NN3precision + NN3recall)
+NN3accuracy <- sum(NN3CM[1,1], NN3CM[2,2])/sum(NN3CM[,])
+NN3error <- 1 - NN3accuracy
+confusionMatrix(NN3CM)
+```
+ 
+# Compare and interpret:
+1- Precision Matrix:
+
+```{r}
+p = matrix(
+c(RFprecision, RF2precision, RF3precision, SVMprecision, SVM2precision, SVM3precision,
+NBprecision, NB2precision, NB3precision, NNprecision, NN2precision, NN3precision),
+nrow=3,
+ncol=4)
+
+row.names(p) <- c("sonar", "hepitat", "indians")
+colnames(p) <- c("RF", "SVM", "NB", "NN")
+p
+```
+
+2- recall Matrix:
+
+```{r}
+
+r = matrix(
+c(RFrecall, RF2recall, RF3recall, SVMrecall, SVM2recall, SVM3recall,
+NBrecall, NB2recall, NB3recall, NNrecall, NN2recall, NN3recall),
+nrow=3,
+ncol=4)
+
+row.names(r) <- c("sonar", "hepitat", "indians")
+colnames(r) <- c("RF", "SVM", "NB", "NN")
+r
+```
+
+3- FScore Matrix:
+
+```{r}
+f = matrix(
+c(RFFScore, RF2FScore, RF3FScore, SVMFScore, SVM2FScore, SVM3FScore,
+NBFScore, NB2FScore, NB3FScore, NNFScore, NN2FScore, NN3FScore),
+nrow=3,
+ncol=4)
+
+row.names(f) <- c("sonar", "hepitat", "indians")
+colnames(f) <- c("RF", "SVM", "NB", "NN")
+f
+```
+
+4- Accuracy Matrix:
+
+```{r}
+
+a = matrix(
+c(RFaccuracy, RF2accuracy, RF3accuracy, SVMaccuracy, SVM2accuracy, SVM3accuracy,
+NBaccuracy, NB2accuracy, NB3accuracy, NNaccuracy, NN2accuracy, NN3accuracy),
+nrow=3,
+ncol=4)
+
+row.names(a) <- c("sonar", "hepitat", "indians")
+colnames(a) <- c("RF", "SVM", "NB", "NN")
+a
+```
+
+5- Error Matrix:
+
+```{r}
+
+e = matrix(
+c(RFerror, RF2error, RF3error, SVMerror, SVM2error, SVM3error,
+NBerror, NB2error, NB3error, NNerror, NN2error, NN3error),
+nrow=3,
+ncol=4)
+
+row.names(e) <- c("sonar", "hepitat", "indians")
+colnames(e) <- c("RF", "SVM", "NB", "NN")
+e
+```
+
+# General Comments:
+1- The hepitat dataset had lots of missing values, that I had to remove and clean, thus around 80 values remained which unfortnately produced a non accurate model, and thus the calculation metrics had some problems.
+
+2- The evaluation metrics of the first training and testing sonar data where really accurate as the FScore was about 0.9 as we used the data for both testing and training, caused over fitting.
+
+3- I had to generate the K-Folds manually without using the built-in function of caret-library as I had a problem installing caret library in particular, instead I split the data manually.
+
+4- The Random Forest Algorithm produced the best values most of the time with all the data sets.
+
+5- The SVM and the NN produced some good results.
+
+6- There is not best algorithm, it all depended on the data size and structure.
+
+7- In the Kfolds cross validations, I split my data and produced the model, finally I used the same test data from which I produced my model to test on at the end.
+
