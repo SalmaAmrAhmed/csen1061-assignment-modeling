@@ -626,3 +626,5 @@ e
 
 7- In the Kfolds cross validations, I split my data and produced the model, finally I used the same test data from which I produced my model to test on at the end.
 
+8- The t-test values are in the confusion matrix.
+
