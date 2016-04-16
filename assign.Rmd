@@ -536,18 +536,173 @@ NN3accuracy <- sum(NN3CM[1,1], NN3CM[2,2])/sum(NN3CM[,])
 NN3error <- 1 - NN3accuracy
 confusionMatrix(NN3CM)
 ```
- 
+
+#Inspect and Load the heart dataset:
+
+```{r}
+heart <- read.csv("~/Desktop/DataScience/Assignement/SPECT.train.csv", stringsAsFactors = FALSE)
+heart %>% dim()
+heart %>% summary()
+heart %>% head()
+heart$X1 <- as.factor(heart$X1)
+```
+
+----------------------------------------------------------------------------------------
+
+# Random Forests:
+
+```{r}
+k = 10
+
+heart$id <- sample(1:k, nrow(heart), replace = TRUE)
+list <- c(1:k)
+
+RF4prediction <- data.frame()
+RF4testsetCopy <- data.frame()
+
+for (i in 1:k) {
+  RF4trainingset <- subset(heart, id %in% list[-i])
+  RF4testset <- subset(heart, id %in% c(i))
+  RF4model <- randomForest(RF4trainingset$X1 ~ ., data = RF4trainingset)
+  RF4temp <- as.data.frame(predict(RF4model, newdata = RF4testset, type = "class"))
+  RF4prediction <- rbind(RF4prediction, RF4temp)
+  RF4testsetCopy <- rbind(RF4testsetCopy,RF4testset)
+  }
+```
+
+Test Random Forest:
+
+```{r}
+
+kFoldModel <- as.factor(RF4prediction$`predict(RF4model, newdata = RF4testset, type = "class")`)
+RF4CM <- table(kFoldModel, RF4testsetCopy$X1)
+RF4precision <- RF4CM[1,1]/sum(RF4CM[1:2,1])
+RF4recall <- RF4CM[1,1]/sum(RF4CM[1,1:2])
+RF4FScore <- 2*RF4precision*RF4recall/(RF4precision + RF4recall)
+RF4accuracy <- sum(RF4CM[1,1], RF4CM[2,2])/sum(RF4CM[,])
+RF4error <- 1 - RF4accuracy
+confusionMatrix(RF4CM)
+```
+
+# SVM:
+
+```{r}
+k = 10
+
+heart$id <- sample(1:k, nrow(heart), replace = TRUE)
+list <- c(1:k)
+
+SVM4prediction <- data.frame()
+SVM4testsetCopy <- data.frame()
+
+for (i in 1:k) {
+  SVM4trainingset <- subset(heart, id %in% list[-i])
+  SVM4testset <- subset(heart, id %in% c(i))
+  SVM4model <- svm(SVM4trainingset$X1 ~ ., data = SVM4trainingset)
+  SVM4temp <- as.data.frame(predict(SVM4model, newdata = SVM4testset, type = "class"))
+  SVM4prediction <- rbind(SVM4prediction, SVM4temp)
+  SVM4testsetCopy <- rbind(SVM4testsetCopy,SVM4testset)
+  }
+```
+
+Test SVM Model:
+
+```{r}
+kFoldModel <- as.factor(SVM4prediction$`predict(SVM4model, newdata = SVM4testset, type = "class")`)
+SVM4CM <- table(kFoldModel, SVM4testsetCopy$X1)
+SVM4precision <- SVM4CM[1,1]/sum(SVM4CM[1:2,1])
+SVM4recall <- SVM4CM[1,1]/sum(SVM4CM[1,1:2])
+SVM4FScore <- 2*SVM4precision*SVM4recall/(SVM4precision + SVM4recall)
+SVM4accuracy <- sum(SVM4CM[1,1], SVM4CM[2,2])/sum(SVM4CM[,])
+SVM4error <- 1 - SVM4accuracy
+confusionMatrix(SVM4CM)
+```
+
+# Naive Bayes Model:
+
+```{r}
+k = 10
+
+heart$id <- sample(1:k, nrow(heart), replace = TRUE)
+list <- c(1:k)
+
+NB4prediction <- data.frame()
+NB4testsetCopy <- data.frame()
+
+for (i in 1:k) {
+  NB4trainingset <- subset(heart, id %in% list[-i])
+  NB4testset <- subset(heart, id %in% c(i))
+  NB4model <- naiveBayes(NB4trainingset$X1 ~ ., data = NB4trainingset)
+  NB4temp <- as.data.frame(predict(NB4model, newdata = NB4testset, type = "class"))
+  NB4prediction <- rbind(NB4prediction, NB4temp)
+  NB4testsetCopy <- rbind(NB4testsetCopy,NB4testset)
+  }
+
+```
+
+Test Naive Bayes Model:
+```{r}
+kFoldModel <- as.factor(NB4prediction$`predict(NB4model, newdata = NB4testset, type = "class")`)
+NB4CM <- table(kFoldModel, NB4testsetCopy$X1)
+NB4precision <- NB4CM[1,1]/sum(NB4CM[1:2,1])
+NB4recall <- NB4CM[1,1]/sum(NB4CM[1,1:2])
+NB4FScore <- 2*NB4precision*NB4recall/(NB4precision + NB4recall)
+NB4accuracy <- sum(NB4CM[1,1], NB4CM[2,2])/sum(NB4CM[,])
+NB4error <- 1 - NB4accuracy
+confusionMatrix(NB4CM)
+```
+
+# Neural Networks Model:
+
+```{r}
+k = 10
+
+heart$id <- sample(1:k, nrow(heart), replace = TRUE)
+list <- c(1:k)
+
+NN4prediction <- data.frame()
+NN4testsetCopy <- data.frame()
+
+for (i in 1:k) {
+  NN4trainingset <- subset(heart, id %in% list[-i])
+  NN4testset <- subset(heart, id %in% c(i))
+  NN4model <- nnet(NN4trainingset$X1 ~ ., data = NN4trainingset, size = 10)
+  NN4temp <- as.data.frame(predict(NN4model, newdata = NN4testset, type = "class"))
+  NN4prediction <- rbind(NN4prediction, NN4temp)
+  NN4testsetCopy <- rbind(NN4testsetCopy,NN4testset)
+  }
+```
+
+Test Neural Networks Model:
+
+```{r}
+kFoldModel <- as.factor(NN4prediction$`predict(NN4model, newdata = NN4testset, type = "class")`)
+NN4CM <- table(kFoldModel, NN4testsetCopy$X1)
+NN4precision <- NN4CM[1,1]/sum(NN4CM[1:2,1])
+NN4recall <- NN4CM[1,1]/sum(NN4CM[1,1:2])
+NN4FScore <- 2*NN4precision*NN4recall/(NN4precision + NN4recall)
+NN4accuracy <- sum(NN4CM[1,1], NN4CM[2,2])/sum(NN4CM[,])
+NN4error <- 1 - NN4accuracy
+confusionMatrix(NN4CM)
+```
+
+
+
+----------------------------------------------------------------------------------------
+
+
 # Compare and interpret:
 1- Precision Matrix:
 
 ```{r}
 p = matrix(
-c(RFprecision, RF2precision, RF3precision, SVMprecision, SVM2precision, SVM3precision,
-NBprecision, NB2precision, NB3precision, NNprecision, NN2precision, NN3precision),
-nrow=3,
+c(RFprecision, RF2precision, RF3precision,RF4precision, SVMprecision, SVM2precision, SVM3precision, SVM4precision, 
+NBprecision, NB2precision, NB3precision, NB4precision, NNprecision, NN2precision, NN3precision,
+NN4precision),
+nrow=4,
 ncol=4)
 
-row.names(p) <- c("sonar", "hepitat", "indians")
+row.names(p) <- c("sonar", "hepitat", "indians", "heart")
 colnames(p) <- c("RF", "SVM", "NB", "NN")
 p
 ```
@@ -557,12 +712,12 @@ p
 ```{r}
 
 r = matrix(
-c(RFrecall, RF2recall, RF3recall, SVMrecall, SVM2recall, SVM3recall,
-NBrecall, NB2recall, NB3recall, NNrecall, NN2recall, NN3recall),
-nrow=3,
+c(RFrecall, RF2recall, RF3recall, RF4recall, SVMrecall, SVM2recall, SVM3recall,SVM4recall,
+NBrecall, NB2recall, NB3recall,NB3recall, NNrecall, NN2recall, NN3recall, NN4recall),
+nrow=4,
 ncol=4)
 
-row.names(r) <- c("sonar", "hepitat", "indians")
+row.names(r) <- c("sonar", "hepitat", "indians", "heart")
 colnames(r) <- c("RF", "SVM", "NB", "NN")
 r
 ```
@@ -571,12 +726,12 @@ r
 
 ```{r}
 f = matrix(
-c(RFFScore, RF2FScore, RF3FScore, SVMFScore, SVM2FScore, SVM3FScore,
-NBFScore, NB2FScore, NB3FScore, NNFScore, NN2FScore, NN3FScore),
-nrow=3,
+c(RFFScore, RF2FScore, RF3FScore, RF4FScore, SVMFScore, SVM2FScore, SVM3FScore, SVM4FScore,
+NBFScore, NB2FScore, NB3FScore, NB4FScore, NNFScore, NN2FScore, NN3FScore, NN4FScore),
+nrow=4,
 ncol=4)
 
-row.names(f) <- c("sonar", "hepitat", "indians")
+row.names(f) <- c("sonar", "hepitat", "indians", "heart")
 colnames(f) <- c("RF", "SVM", "NB", "NN")
 f
 ```
@@ -586,12 +741,12 @@ f
 ```{r}
 
 a = matrix(
-c(RFaccuracy, RF2accuracy, RF3accuracy, SVMaccuracy, SVM2accuracy, SVM3accuracy,
-NBaccuracy, NB2accuracy, NB3accuracy, NNaccuracy, NN2accuracy, NN3accuracy),
-nrow=3,
+c(RFaccuracy, RF2accuracy, RF3accuracy, RF4accuracy, SVMaccuracy, SVM2accuracy, SVM3accuracy, SVM4accuracy,
+NBaccuracy, NB2accuracy, NB3accuracy, NB4accuracy, NNaccuracy, NN2accuracy, NN3accuracy, NN4accuracy),
+nrow=4,
 ncol=4)
 
-row.names(a) <- c("sonar", "hepitat", "indians")
+row.names(a) <- c("sonar", "hepitat", "indians", "heart")
 colnames(a) <- c("RF", "SVM", "NB", "NN")
 a
 ```
@@ -601,12 +756,12 @@ a
 ```{r}
 
 e = matrix(
-c(RFerror, RF2error, RF3error, SVMerror, SVM2error, SVM3error,
-NBerror, NB2error, NB3error, NNerror, NN2error, NN3error),
-nrow=3,
+c(RFerror, RF2error, RF3error,RF4error, SVMerror, SVM2error, SVM3error, SVM4error,
+NBerror, NB2error, NB3error, NB4error, NNerror, NN2error, NN3error, NN4error),
+nrow=4,
 ncol=4)
 
-row.names(e) <- c("sonar", "hepitat", "indians")
+row.names(e) <- c("sonar", "hepitat", "indians", "heart")
 colnames(e) <- c("RF", "SVM", "NB", "NN")
 e
 ```
@@ -626,5 +781,9 @@ e
 
 7- In the Kfolds cross validations, I split my data and produced the model, finally I used the same test data from which I produced my model to test on at the end.
 
-8- The t-test values are in the confusion matrix.
+8- The t-test values are in the confusion matrix. 
+
+9- I just used the trainnig data in file "SPECT.train.csv" for the heart case which was about 79 records.
+
+10- It is clear that the hepitat data was the worst, maybe cause it's values where all numeric and factors.
 
